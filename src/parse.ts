@@ -48,23 +48,74 @@ const SYSTEM = `คุณคือตัวแยกคำสั่งของ�
 ถ้าเป็นการตั้งเตือนแต่ไม่รู้ว่าจะเตือนเรื่องอะไรเลย ให้ action=other และใส่ reply ถามกลับ
 ช่องที่ไม่ใช้ ให้ใส่ "" หรือ 0 หรือ [] หรือ false`;
 
-export async function parseMessage(apiKey: string, model: string, message: string, now: number): Promise<Intent | null> {
-  const client = new Anthropic({ apiKey, maxRetries: 1, timeout: 25_000 });
+function userContent(message: string, now: number): string {
   const p = toLocal(now);
   const nowText = `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")} ${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`;
+  return `เวลาปัจจุบัน (เวลาไทย): ${nowText}\n\nปฏิทิน 14 วันข้างหน้า:\n${upcomingCalendar(now)}\n\nข้อความ:\n${message}`;
+}
 
+export interface ParseEnv {
+  AI?: Ai;
+  AI_PROVIDER?: string;
+  WORKERS_AI_MODEL?: string;
+  ANTHROPIC_API_KEY?: string;
+  CLAUDE_MODEL?: string;
+}
+
+/** เลือกผู้ให้บริการ AI ตาม AI_PROVIDER: "workers-ai" (ฟรี, ค่าเริ่มต้น) หรือ "claude" */
+export async function parseMessage(env: ParseEnv, message: string, now: number): Promise<Intent | null> {
+  if (env.AI_PROVIDER === "claude") return parseWithClaude(env, message, now);
+  return parseWithWorkersAI(env, message, now);
+}
+
+async function parseWithWorkersAI(env: ParseEnv, message: string, now: number): Promise<Intent | null> {
+  if (!env.AI) {
+    console.error("Workers AI binding (AI) is missing");
+    return null;
+  }
+  try {
+    const model = (env.WORKERS_AI_MODEL || "@cf/meta/llama-3.3-70b-instruct-fp8-fast") as Parameters<Ai["run"]>[0];
+    const result = (await env.AI.run(model, {
+      messages: [
+        { role: "system", content: SYSTEM },
+        { role: "user", content: userContent(message, now) },
+      ],
+      response_format: { type: "json_schema", json_schema: z.toJSONSchema(Intent) },
+      max_tokens: 400,
+      temperature: 0,
+    } as never)) as { response?: unknown };
+    const raw = typeof result.response === "string" ? JSON.parse(result.response) : result.response;
+    const parsed = Intent.safeParse(withDefaults(raw));
+    if (!parsed.success) {
+      console.error("Workers AI returned an unexpected shape", JSON.stringify(raw));
+      return null;
+    }
+    return parsed.data;
+  } catch (err) {
+    console.error("Workers AI parse failed", err);
+    return null;
+  }
+}
+
+/** โมเดลฟรีบางครั้งเว้นช่องที่ไม่ใช้ เติมค่าว่างให้ครบ */
+function withDefaults(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  return { text: "", date: "", time: "", in_minutes: 0, repeat: "none", mention_all: false, delete_ids: [], reply: "", ...raw };
+}
+
+async function parseWithClaude(env: ParseEnv, message: string, now: number): Promise<Intent | null> {
+  if (!env.ANTHROPIC_API_KEY) {
+    console.error("ANTHROPIC_API_KEY is not set");
+    return null;
+  }
+  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, maxRetries: 1, timeout: 25_000 });
   try {
     const response = await client.messages.parse({
-      model,
+      model: env.CLAUDE_MODEL || "claude-haiku-5-5",
       max_tokens: 4000,
       system: SYSTEM,
       output_config: { format: zodOutputFormat(Intent) },
-      messages: [
-        {
-          role: "user",
-          content: `เวลาปัจจุบัน (เวลาไทย): ${nowText}\n\nปฏิทิน 14 วันข้างหน้า:\n${upcomingCalendar(now)}\n\nข้อความ:\n${message}`,
-        },
-      ],
+      messages: [{ role: "user", content: userContent(message, now) }],
     });
     if (response.stop_reason === "refusal") return null;
     return response.parsed_output ?? null;

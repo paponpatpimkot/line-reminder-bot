@@ -2,7 +2,7 @@
 
 บอทเตือนความจำบน LINE สำหรับกลุ่มที่ทำงาน พิมพ์ภาษาไทยปกติ แล้วบอทเตือนตรงเวลาพร้อมแท็กคนที่เกี่ยวข้อง
 
-ทำงานบน Cloudflare Workers + D1 (ฟรี) และใช้ Claude แยกวันเวลาจากข้อความภาษาไทย
+ทำงานบน Cloudflare Workers + D1 + Workers AI ฟรีทั้งหมด ข้อความที่มีรูปแบบวันเวลาชัดเจนบอทอ่านเองโดยไม่ใช้ AI ส่วนภาษาพูดที่ซับซ้อนใช้ Workers AI ช่วย (เปลี่ยนเป็น Claude ได้ถ้าอยากให้แม่นขึ้น)
 
 ## ใช้งานในกลุ่ม
 
@@ -35,7 +35,9 @@ LINE แพ็กเกจฟรีส่งได้ 300 ข้อความ�
 
 ## ติดตั้งครั้งแรก (ทำครั้งเดียว ราว 30 นาที)
 
-ต้องมี: Node.js 20 ขึ้นไป, บัญชี Cloudflare, LINE Official Account ที่เปิด Messaging API แล้ว, API key ของ Claude
+ต้องมี: Node.js 20 ขึ้นไป, บัญชี Cloudflare, LINE Official Account ที่เปิด Messaging API แล้ว
+
+บน Windows ถ้า PowerShell ขึ้นว่า "running scripts is disabled" ให้ใช้ `npm.cmd` และ `npx.cmd` แทน `npm` และ `npx`
 
 ### 1. ดาวน์โหลดโค้ดและติดตั้ง
 
@@ -65,14 +67,12 @@ npm run db:init
 ```bash
 npx wrangler secret put LINE_CHANNEL_SECRET
 npx wrangler secret put LINE_CHANNEL_ACCESS_TOKEN
-npx wrangler secret put ANTHROPIC_API_KEY
 ```
 
 แต่ละคำสั่งจะให้วางค่าแล้วกด Enter
 
 - `LINE_CHANNEL_SECRET`: LINE Developers Console → channel ของบอท → แท็บ Basic settings
 - `LINE_CHANNEL_ACCESS_TOKEN`: แท็บ Messaging API → Channel access token (long-lived) → Issue
-- `ANTHROPIC_API_KEY`: [Claude Console](https://platform.claude.com/) → API keys
 
 ### 4. Deploy
 
@@ -112,7 +112,9 @@ npm run deploy
 
 | ค่า | ค่าเริ่มต้น | ความหมาย |
 | --- | --- | --- |
-| `CLAUDE_MODEL` | `claude-haiku-5-5` | โมเดลที่แยกเวลา ไม่ถึง ฿0.05 ต่อข้อความ ถ้าแยกผิดบ่อยเปลี่ยนเป็น `claude-opus-5-5` ได้ (แม่นกว่า ราว ฿0.5–1 ต่อข้อความ) |
+| `AI_PROVIDER` | `workers-ai` | AI ที่ใช้กับภาษาพูด: `workers-ai` (ฟรี) หรือ `claude` (แม่นกว่า ต้องเติมเครดิตและ `npx wrangler secret put ANTHROPIC_API_KEY`) |
+| `WORKERS_AI_MODEL` | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` | โมเดลของ Workers AI |
+| `CLAUDE_MODEL` | `claude-haiku-5-5` | โมเดล Claude เมื่อเลือก `claude` (ไม่ถึง ฿0.05 ต่อข้อความ) |
 | `BOT_KEYWORDS` | `บอท,เตือน` | คำขึ้นต้นที่ทำให้บอทตอบในกลุ่ม |
 | `DEFAULT_TIME` | `08:00` | เวลาที่ใช้เมื่อไม่ได้บอกเวลา |
 
@@ -121,9 +123,10 @@ npm run deploy
 | ไฟล์ | หน้าที่ |
 | --- | --- |
 | `src/index.ts` | รับ webhook, คำสั่งต่างๆ, ตัวส่งเตือนที่ทำงานทุกนาที |
-| `src/parse.ts` | ส่งข้อความให้ Claude แยกเป็น JSON (เรื่อง, วันที่, เวลา, การทำซ้ำ) |
+| `src/quickparse.ts` | อ่านวันเวลาภาษาไทยแบบใช้กฎ (27/11, พรุ่งนี้, 2 ทุ่ม, บ่าย 3, ทุกวันศุกร์ ฯลฯ) |
+| `src/parse.ts` | ส่งข้อความที่อ่านเองไม่ออกให้ AI แยกเป็น JSON |
 | `src/time.ts` | คำนวณเวลาไทยและรอบถัดไปของการเตือนซ้ำ |
 | `src/line.ts` | เรียก LINE Messaging API และตรวจลายเซ็น webhook |
 | `schema.sql` | ตารางในฐานข้อมูล D1 |
 
-พัฒนาต่อ: `npm test` (ทดสอบการคำนวณเวลา), `npm run typecheck`
+พัฒนาต่อ: `npm test` (ทดสอบการคำนวณเวลาและการอ่านภาษาไทย), `npm run typecheck`

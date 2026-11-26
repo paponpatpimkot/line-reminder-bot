@@ -5,8 +5,11 @@ export interface Env {
   DB: D1Database;
   LINE_CHANNEL_SECRET: string;
   LINE_CHANNEL_ACCESS_TOKEN: string;
-  ANTHROPIC_API_KEY: string;
-  CLAUDE_MODEL: string;
+  AI?: Ai;
+  AI_PROVIDER?: string;
+  WORKERS_AI_MODEL?: string;
+  ANTHROPIC_API_KEY?: string;
+  CLAUDE_MODEL?: string;
   BOT_KEYWORDS: string;
   DEFAULT_TIME: string;
 }
