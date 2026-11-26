@@ -16,7 +16,7 @@ export const Intent = z.object({
   repeat: z.enum(["none", "daily", "weekdays", "weekly", "monthly"]),
   mention_all: z.boolean().describe("true ถ้าบอกให้เตือน/แท็กทุกคน"),
   delete_ids: z.array(z.number().int()).describe("หมายเลขการเตือนที่ต้องการลบ"),
-  reply: z.string().describe("สำหรับ action=help/other หรือเมื่อข้อมูลไม่พอ: ข้อความตอบกลับภาษาไทยสั้นๆ สุภาพ ไม่เกิน 2 ประโยค"),
+  reply: z.string().describe("สำหรับ action=help/other หรือเมื่อข้อมูลไม่พอ: ข้อความตอบกลับภาษาไทยสั้นๆ ไม่เกิน 2 ประโยค พูดแบบป้าใจดี: แทนตัวเองว่า ป้า เรียกผู้ใช้ว่า หลาน ลงท้าย จ้ะ/จ๊ะ/นะ ห้ามใช้ ครับ/ผม/ค่ะ"),
 });
 export type Intent = z.infer<typeof Intent>;
 
@@ -46,7 +46,8 @@ const SYSTEM = `คุณคือตัวแยกคำสั่งของ�
 ข้อความที่ขึ้นต้นด้วย "ลบ", "ยกเลิก" ตามด้วยหมายเลข = delete
 "ดูรายการ", "มีเตือนอะไรบ้าง" = list ; "โควตา", "เหลือกี่ครั้ง" = quota
 ถ้าเป็นการตั้งเตือนแต่ไม่รู้ว่าจะเตือนเรื่องอะไรเลย ให้ action=other และใส่ reply ถามกลับ
-ช่องที่ไม่ใช้ ให้ใส่ "" หรือ 0 หรือ [] หรือ false`;
+ช่องที่ไม่ใช้ ให้ใส่ "" หรือ 0 หรือ [] หรือ false
+reply ต้องพูดแบบป้าใจดี (ผู้หญิง): แทนตัวเองว่า "ป้า" เรียกผู้ใช้ว่า "หลาน" ลงท้าย "จ้ะ/จ๊ะ/นะจ๊ะ" ห้ามใช้ ครับ/ผม/ค่ะ/ดิฉัน`;
 
 function userContent(message: string, now: number): string {
   const p = toLocal(now);

@@ -36,14 +36,14 @@ interface ReminderRow {
   fail_reason: string | null;
 }
 
-const HELP = `วิธีใช้บอทเตือนความจำ
+const HELP = `วิธีให้ป้าช่วยเตือนจ้ะหลาน
 • ตั้งเตือน: "เตือน พรุ่งนี้ 9 โมง ประชุมทีม @ชื่อ"
 • เตือนซ้ำ: "เตือน ทุกวันศุกร์ บ่าย 3 ส่งรายงาน"
 • เตือนทุกคน: "เตือนทุกคน 30 พ.ย. 2 ทุ่ม ปิดระบบ"
 • ดูรายการ: "เตือน ดูรายการ"
 • ลบ: "เตือน ลบ 12"
 • โควตา: "เตือน โควตา"
-ในกลุ่ม ให้ขึ้นต้นด้วย "เตือน" หรือ "บอท" หรือแท็กบอท`;
+ในกลุ่ม ขึ้นต้นด้วย "เตือน" หรือ "บอท" หรือแท็กป้าก็ได้จ้ะ`;
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -78,7 +78,7 @@ async function handleEvent(env: Env, event: WebhookEvent): Promise<void> {
   if (!event.replyToken) return;
 
   if (event.type === "join") {
-    await reply(env, event.replyToken, [text(`สวัสดีครับ ผมเป็นบอทเตือนความจำของกลุ่มนี้\n\n${HELP}`)]);
+    await reply(env, event.replyToken, [text(`สวัสดีจ้ะหลานๆ ป้ามาช่วยเตือนความจำให้กลุ่มนี้นะจ๊ะ\n\n${HELP}`)]);
     return;
   }
 
@@ -145,7 +145,7 @@ async function respond(env: Env, source: Source, message: string, mentions: Ment
 
   const intent = await parseMessage(env, message, now);
   if (!intent) {
-    return [text('ขอโทษครับ ผมไม่เข้าใจ ลองพิมพ์แบบนี้:\n"เตือน 27/11 20:00 ส่งรายงาน"\n"เตือน พรุ่งนี้ 9 โมง ประชุม"')];
+    return [text('ป้าไม่ค่อยเข้าใจจ้ะหลาน ลองพิมพ์แบบนี้นะ:\n"เตือน 27/11 20:00 ส่งรายงาน"\n"เตือน พรุ่งนี้ 9 โมง ประชุม"')];
   }
 
   switch (intent.action) {
@@ -172,12 +172,12 @@ async function createReminder(
   mentionAll: boolean,
   now: number,
 ): Promise<LineMessage> {
-  if (!intent.text.trim()) return text(intent.reply || "จะให้เตือนเรื่องอะไรครับ");
+  if (!intent.text.trim()) return text(intent.reply || "จะให้ป้าเตือนเรื่องอะไรจ๊ะหลาน");
 
   const resolved = resolveFireAt(now, intent.date, intent.time, intent.in_minutes, env.DEFAULT_TIME);
-  if (!resolved) return text('ผมไม่แน่ใจเรื่องวันหรือเวลา ลองพิมพ์ใหม่ เช่น "เตือน พรุ่งนี้ 9 โมง ประชุม"');
+  if (!resolved) return text('ป้าไม่แน่ใจเรื่องวันหรือเวลาจ้ะ ลองพิมพ์ใหม่นะหลาน เช่น "เตือน พรุ่งนี้ 9 โมง ประชุม"');
   if (resolved.fireAt < now - 60_000) {
-    return text(`เวลา ${formatThai(resolved.fireAt)} ผ่านไปแล้วครับ ลองบอกวันเวลาใหม่อีกครั้ง`);
+    return text(`เวลา ${formatThai(resolved.fireAt)} ผ่านไปแล้วนะหลาน บอกวันเวลาใหม่ให้ป้าอีกทีจ้ะ`);
   }
 
   const chatId = chatIdOf(source);
@@ -190,8 +190,8 @@ async function createReminder(
     .run();
   const id = result.meta.last_row_id;
 
-  const lines = [`✅ ตั้งเตือนแล้ว #${id}`, formatThai(resolved.fireAt), `เรื่อง: ${intent.text.trim()}`];
-  if (resolved.usedDefaultTime) lines.push(`(ไม่ได้บอกเวลา จึงตั้งเป็น ${env.DEFAULT_TIME} น.)`);
+  const lines = [`✅ ป้าจดไว้แล้วจ้ะ #${id}`, formatThai(resolved.fireAt), `เรื่อง: ${intent.text.trim()}`];
+  if (resolved.usedDefaultTime) lines.push(`(หลานไม่ได้บอกเวลา ป้าเลยตั้งเป็น ${env.DEFAULT_TIME} น. นะจ๊ะ)`);
   if (intent.repeat !== "none") lines.push(`ซ้ำ: ${repeatLabel(intent.repeat)}`);
   if (mentionAll) lines.push("แท็ก: ทุกคน");
   else if (mentions.length) lines.push(`แท็ก: ${mentions.map((m) => "@" + m.name).join(" ")}`);
@@ -203,7 +203,7 @@ async function createReminder(
     const perMonth = Math.ceil(timesPerMonth(intent.repeat) * recipients);
     const left = Math.max(q.limit - q.used, 0);
     lines.push(`ใช้โควตา ${intent.repeat === "none" ? perMonth : `ราว ${perMonth}/เดือน`} จากที่เหลือ ${left} ข้อความ`);
-    if (perMonth > left) lines.push("⚠️ โควตาเดือนนี้อาจไม่พอ การเตือนบางครั้งจะส่งไม่ออก");
+    if (perMonth > left) lines.push("⚠️ โควตาเดือนนี้อาจไม่พอนะหลาน บางครั้งป้าอาจเตือนไม่ได้");
   }
 
   return text(lines.join("\n"), [postbackButton(`ยกเลิก #${id}`, `a=cancel&id=${id}`, `ยกเลิกเตือน #${id}`)]);
@@ -215,17 +215,17 @@ async function listReminders(env: Env, chatId: string): Promise<LineMessage> {
   )
     .bind(chatId)
     .all<ReminderRow>();
-  if (!results.length) return text("ยังไม่มีการเตือนที่รออยู่ครับ");
+  if (!results.length) return text("ตอนนี้ยังไม่มีเรื่องที่ป้าต้องเตือนจ้ะ");
   const lines = results.map((r) => {
     const rep = r.repeat !== "none" ? ` (${repeatLabel(r.repeat)})` : "";
     return `#${r.id} ${formatThai(r.fire_at)}\n   ${r.text}${rep}`;
   });
-  return text(`การเตือนที่รออยู่ ${results.length} รายการ\n\n${lines.join("\n")}\n\nลบได้ด้วย "เตือน ลบ <หมายเลข>"`);
+  return text(`เรื่องที่ป้ารอเตือนอยู่ ${results.length} รายการจ้ะ\n\n${lines.join("\n")}\n\nลบได้ด้วย "เตือน ลบ <หมายเลข>"`);
 }
 
 async function deleteReminders(env: Env, chatId: string, ids: number[]): Promise<LineMessage> {
   const valid = ids.filter((n) => Number.isInteger(n) && n > 0);
-  if (!valid.length) return text('บอกหมายเลขที่จะลบด้วยครับ เช่น "เตือน ลบ 12" (ดูหมายเลขได้จาก "เตือน ดูรายการ")');
+  if (!valid.length) return text('บอกหมายเลขที่จะลบด้วยนะหลาน เช่น "เตือน ลบ 12" (ดูหมายเลขได้จาก "เตือน ดูรายการ")');
   const done: number[] = [];
   for (const id of valid) {
     const r = await env.DB.prepare(
@@ -235,8 +235,8 @@ async function deleteReminders(env: Env, chatId: string, ids: number[]): Promise
       .run();
     if (r.meta.changes) done.push(id);
   }
-  if (!done.length) return text("ไม่พบการเตือนหมายเลขนั้นในแชทนี้ครับ");
-  return text(`🗑️ ยกเลิกแล้ว: ${done.map((n) => "#" + n).join(", ")}`);
+  if (!done.length) return text("ป้าหาเตือนหมายเลขนั้นในแชทนี้ไม่เจอจ้ะ");
+  return text(`🗑️ ป้ายกเลิกให้แล้วจ้ะ: ${done.map((n) => "#" + n).join(", ")}`);
 }
 
 async function quotaText(env: Env, source: Source): Promise<LineMessage> {
@@ -261,7 +261,7 @@ async function handlePostback(env: Env, event: WebhookEvent): Promise<void> {
     const r = await env.DB.prepare(`UPDATE reminders SET status = 'cancelled', updated_at = ? WHERE id = ? AND status = 'active'`)
       .bind(Date.now(), id)
       .run();
-    await reply(env, event.replyToken!, [text(r.meta.changes ? `🗑️ ยกเลิกเตือน #${id} แล้ว` : `เตือน #${id} ถูกยกเลิกหรือส่งไปแล้ว`)]);
+    await reply(env, event.replyToken!, [text(r.meta.changes ? `🗑️ ป้ายกเลิกเตือน #${id} ให้แล้วจ้ะ` : `เตือน #${id} ถูกยกเลิกหรือป้าเตือนไปแล้วจ้ะ`)]);
     return;
   }
 
@@ -269,8 +269,8 @@ async function handlePostback(env: Env, event: WebhookEvent): Promise<void> {
     if (row.repeat === "none" && row.status === "sent") {
       await env.DB.prepare(`UPDATE reminders SET status = 'done', updated_at = ? WHERE id = ?`).bind(Date.now(), id).run();
     }
-    const name = event.source.userId ? await displayName(env, event.source, event.source.userId) : "สมาชิก";
-    await reply(env, event.replyToken!, [text(`✅ ${name} ทำ "${row.text}" เสร็จแล้ว`)]);
+    const name = event.source.userId ? await displayName(env, event.source, event.source.userId) : "คนหนึ่ง";
+    await reply(env, event.replyToken!, [text(`✅ หลาน${name} ทำ "${row.text}" เสร็จแล้ว เก่งมากจ้ะ`)]);
   }
 }
 
@@ -286,7 +286,7 @@ async function failureNotice(env: Env, chatId: string): Promise<string> {
     .bind(chatId)
     .run();
   const lines = results.map((r) => `• #${r.id} ${r.text} (${r.fail_reason})`);
-  return `⚠️ มีการเตือนที่ส่งไม่ออก:\n${lines.join("\n")}`;
+  return `⚠️ ป้าขอโทษนะหลาน มีเรื่องที่ป้าเตือนไม่ออก:\n${lines.join("\n")}`;
 }
 
 // ======================= ส่งการเตือน (ทุกนาที) =======================
@@ -373,9 +373,9 @@ function buildReminderMessage(rows: ReminderRow[], now: number, footer: string):
   if (rows.length === 1) {
     const r = rows[0];
     const tags = tagsFor(r);
-    body = `⏰ เตือน #${r.id}${late(r)}\n${safe(r.text)}${tags ? `\n${tags}` : ""}`;
+    body = `⏰ ป้ามาเตือนจ้ะ #${r.id}${late(r)}\n${safe(r.text)}${tags ? `\n${tags}` : ""}`;
   } else {
-    body = `⏰ เตือน ${rows.length} เรื่อง\n` + rows.map((r) => `• #${r.id} ${safe(r.text)}${late(r)} ${tagsFor(r)}`.trimEnd()).join("\n");
+    body = `⏰ ป้ามาเตือน ${rows.length} เรื่องจ้ะ\n` + rows.map((r) => `• #${r.id} ${safe(r.text)}${late(r)} ${tagsFor(r)}`.trimEnd()).join("\n");
   }
 
   const buttons = rows.slice(0, 13).map((r) => postbackButton(rows.length === 1 ? "✅ เสร็จแล้ว" : `✅ เสร็จ #${r.id}`, `a=done&id=${r.id}`));
