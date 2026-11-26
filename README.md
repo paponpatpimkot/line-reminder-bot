@@ -35,7 +35,7 @@ LINE แพ็กเกจฟรีส่งได้ 300 ข้อความ�
 
 ## ติดตั้งครั้งแรก (ทำครั้งเดียว ราว 30 นาที)
 
-ต้องมี: Node.js 20 ขึ้นไป, บัญชี Cloudflare, LINE Official Account ที่เปิด Messaging API แล้ว
+ต้องมี: Node.js 22.12 ขึ้นไป (เช็กด้วย `node -v`), บัญชี Cloudflare, LINE Official Account ที่เปิด Messaging API แล้ว
 
 บน Windows ถ้า PowerShell ขึ้นว่า "running scripts is disabled" ให้ใช้ `npm.cmd` และ `npx.cmd` แทน `npm` และ `npx`
 
