@@ -13,6 +13,7 @@ import {
   type Source,
   type WebhookEvent,
 } from "./line";
+import { chatWithAuntie, matchKeyword } from "./chat";
 import { parseMessage } from "./parse";
 import { quickParse } from "./quickparse";
 import { formatThai, nextOccurrence, repeatLabel, resolveFireAt, timesPerMonth, toLocal, type Repeat } from "./time";
@@ -43,7 +44,8 @@ const HELP = `วิธีให้ป้าช่วยเตือนจ้ะ
 • ดูรายการ: "เตือน ดูรายการ"
 • ลบ: "เตือน ลบ 12"
 • โควตา: "เตือน โควตา"
-ในกลุ่ม ขึ้นต้นด้วย "เตือน" หรือ "บอท" หรือแท็กป้าก็ได้จ้ะ`;
+• คุยเล่นกับป้า: "ป้า วันนี้กินอะไรดี"
+ในกลุ่ม ขึ้นต้นด้วย "ป้า" "เตือน" หรือ "บอท" หรือแท็กป้าก็ได้จ้ะ`;
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -94,7 +96,7 @@ async function handleEvent(env: Env, event: WebhookEvent): Promise<void> {
 
   const chatId = chatIdOf(event.source);
   const notice = await failureNotice(env, chatId);
-  const messages = await respond(env, event.source, cleaned, mentions, mentionAll);
+  const messages = await respond(env, event.source, cleaned, mentions, mentionAll, event.source.userId);
   if (notice) messages.unshift(text(notice));
   await reply(env, event.replyToken, messages);
 }
@@ -117,15 +119,25 @@ function readMessage(env: Env, event: WebhookEvent) {
   }
   cleaned = cleaned.replace(/\s+/g, " ").trim();
 
-  const keywords = env.BOT_KEYWORDS.split(",").map((k) => k.trim()).filter(Boolean);
-  if (keywords.some((k) => cleaned.startsWith(k))) addressed = true;
-  if (cleaned.startsWith("บอท")) cleaned = cleaned.slice(3).trim();
+  // "ป้า" เรียกได้เสมอ (ไม่ต้องแก้ wrangler.toml)
+  const keywords = [...new Set([...env.BOT_KEYWORDS.split(",").map((k) => k.trim()).filter(Boolean), "ป้า"])];
+  const kw = matchKeyword(cleaned, keywords);
+  if (kw.addressed) addressed = true;
+  cleaned = kw.rest;
 
   return { addressed, cleaned, mentions, mentionAll };
 }
 
-async function respond(env: Env, source: Source, message: string, mentions: Mention[], mentionAll: boolean): Promise<LineMessage[]> {
+async function respond(
+  env: Env,
+  source: Source,
+  message: string,
+  mentions: Mention[],
+  mentionAll: boolean,
+  userId?: string,
+): Promise<LineMessage[]> {
   const chatId = chatIdOf(source);
+  if (!message) return [text("ว่าไงจ๊ะหลาน ให้ป้าช่วยอะไร")];
 
   // คำสั่งง่ายๆ ไม่ต้องเรียก AI
   const simple = message.replace(/^เตือน\s*/, "").trim();
@@ -159,8 +171,12 @@ async function respond(env: Env, source: Source, message: string, mentions: Ment
       return [text(HELP)];
     case "create":
       return [await createReminder(env, source, intent, mentions, mentionAll || intent.mention_all, now)];
-    default:
-      return [text(intent.reply || HELP)];
+    default: {
+      // ไม่ใช่คำสั่งเตือน คุยเล่นกับป้า
+      const speaker = source.type !== "user" && userId ? await displayName(env, source, userId) : null;
+      const answer = await chatWithAuntie(env, chatId, speaker, message, now);
+      return [text(answer || intent.reply || HELP)];
+    }
   }
 }
 

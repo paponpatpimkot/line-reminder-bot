@@ -8,7 +8,7 @@ import { toLocal, upcomingCalendar } from "./time";
 export const Intent = z.object({
   action: z
     .enum(["create", "list", "delete", "quota", "help", "other"])
-    .describe("create=ตั้งเตือน, list=ดูรายการ, delete=ลบ/ยกเลิก, quota=ถามโควตา, help=ถามวิธีใช้, other=อย่างอื่น"),
+    .describe("create=ตั้งเตือน, list=ดูรายการ, delete=ลบ/ยกเลิก, quota=ถามโควตา, help=ถามวิธีใช้บอท, other=คุยเล่น ถามเรื่องทั่วไป หรืออย่างอื่นที่ไม่ใช่คำสั่ง"),
   text: z.string().describe("เรื่องที่ต้องเตือน สั้นๆ ไม่ต้องมีคำบอกเวลาและชื่อคนที่ถูกแท็ก"),
   date: z.string().describe("วันที่แบบ YYYY-MM-DD (ค.ศ.) หรือ \"\" ถ้าไม่ได้บอกวัน"),
   time: z.string().describe("เวลาแบบ HH:MM 24 ชั่วโมง หรือ \"\" ถ้าไม่ได้บอกเวลา"),

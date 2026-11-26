@@ -29,3 +29,12 @@ CREATE TABLE IF NOT EXISTS push_log (
   error       TEXT,
   sent_at     INTEGER NOT NULL
 );
+
+-- ประวัติคุยเล่นกับป้า (โค้ดสร้างให้เองถ้ายังไม่มี)
+CREATE TABLE IF NOT EXISTS chat_history (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  chat_id    TEXT    NOT NULL,
+  role       TEXT    NOT NULL,                 -- user | assistant
+  content    TEXT    NOT NULL,
+  created_at INTEGER NOT NULL
+);
