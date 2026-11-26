@@ -14,6 +14,7 @@ import {
   type WebhookEvent,
 } from "./line";
 import { parseMessage } from "./parse";
+import { quickParse } from "./quickparse";
 import { formatThai, nextOccurrence, repeatLabel, resolveFireAt, timesPerMonth, toLocal, type Repeat } from "./time";
 
 interface Mention {
@@ -135,8 +136,17 @@ async function respond(env: Env, source: Source, message: string, mentions: Ment
   if (del) return [await deleteReminders(env, chatId, del[2].split(/[\s,#]+/).filter(Boolean).map(Number))];
 
   const now = Date.now();
-  const intent = await parseMessage(env.ANTHROPIC_API_KEY, env.CLAUDE_MODEL, message, now);
-  if (!intent) return [text("ขอโทษครับ ตอนนี้ระบบแปลคำสั่งขัดข้อง ลองใหม่อีกครั้งนะครับ")];
+
+  // รูปแบบที่อ่านออกเองได้ ไม่ต้องเรียก AI
+  const quick = quickParse(simple, now);
+  if (quick) {
+    return [await createReminder(env, source, { ...quick, reply: "" }, mentions, mentionAll || quick.mention_all, now)];
+  }
+
+  const intent = await parseMessage(env, message, now);
+  if (!intent) {
+    return [text('ขอโทษครับ ผมไม่เข้าใจ ลองพิมพ์แบบนี้:\n"เตือน 27/11 20:00 ส่งรายงาน"\n"เตือน พรุ่งนี้ 9 โมง ประชุม"')];
+  }
 
   switch (intent.action) {
     case "list":

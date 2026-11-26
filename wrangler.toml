@@ -13,8 +13,15 @@ database_name = "line-reminder-db"
 # ใส่ database_id ที่ได้จากคำสั่ง `npx wrangler d1 create line-reminder-db`
 database_id = "REPLACE_WITH_YOUR_DATABASE_ID"
 
+# Cloudflare Workers AI (ฟรีวันละ 10,000 neurons) ใช้แยกข้อความภาษาพูด
+[ai]
+binding = "AI"
+
 [vars]
-# โมเดล Claude ที่ใช้แยกเวลาจากข้อความ (เปลี่ยนเป็น claude-opus-5-5 ได้ถ้าอยากให้แม่นขึ้น แต่แพงกว่า)
+# AI ที่ใช้แยกวันเวลาจากภาษาพูด: "workers-ai" (ฟรี) หรือ "claude" (ต้องใส่ ANTHROPIC_API_KEY)
+# ข้อความที่มีรูปแบบชัดเจน เช่น "27/11 20:00" หรือ "พรุ่งนี้ 2 ทุ่ม" อ่านเองโดยไม่ใช้ AI
+AI_PROVIDER = "workers-ai"
+WORKERS_AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
 CLAUDE_MODEL = "claude-haiku-5-5"
 # คำขึ้นต้นที่ทำให้บอทตอบในกลุ่ม (คั่นด้วย comma) นอกจากการแท็กบอทตรงๆ
 BOT_KEYWORDS = "บอท,เตือน"
@@ -24,4 +31,4 @@ DEFAULT_TIME = "08:00"
 # ความลับ ใส่ด้วยคำสั่ง `npx wrangler secret put <ชื่อ>` ห้ามเขียนลงไฟล์นี้
 #   LINE_CHANNEL_SECRET
 #   LINE_CHANNEL_ACCESS_TOKEN
-#   ANTHROPIC_API_KEY
+#   ANTHROPIC_API_KEY   (เฉพาะเมื่อ AI_PROVIDER = "claude")
