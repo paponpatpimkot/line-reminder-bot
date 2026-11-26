@@ -76,6 +76,9 @@ export function quickParse(input: string, now: number): QuickIntent | null {
     return m;
   };
 
+  // คำถามหรือคุยเล่น เช่น "วันนี้กินอะไรดี" ให้ AI ตัดสิน
+  if (/อะไร|ไหม|มั้ย|ยังไง|อย่างไร|ทำไม|เหรอ|หรอ|ไง|กี่|ใคร|ที่ไหน|[?？]/.test(input)) return null;
+
   let mentionAll = false;
   if (take(/^\s*ทุกคน/)) mentionAll = true;
 
@@ -152,7 +155,8 @@ export function quickParse(input: string, now: number): QuickIntent | null {
     time = `${pad(h)}:${pad(half(m[3]))}`;
   }
 
-  if (!time && !date && !inMinutes && repeat === "none") return null;
+  // ต้องมีเวลาชัดเจน ไม่งั้นอาจเป็นแค่ประโยคที่มีคำว่า "วันนี้" "พรุ่งนี้" ให้ AI ตัดสิน
+  if (!time && !inMinutes) return null;
 
   // ส่วนที่เหลือคือเรื่องที่ต้องเตือน
   let text = s

@@ -47,5 +47,8 @@ describe("quickParse", () => {
     expect(q("ช่วยจำว่าลูกค้าชอบกาแฟ")).toBeNull();
     expect(q("พรุ่งนี้ 9 โมง")).toBeNull();
     expect(q("31/2 9:00 วันที่ไม่มีจริง")).toBeNull();
+    expect(q("วันนี้กินอะไรดี")).toBeNull();
+    expect(q("พรุ่งนี้ไปเที่ยวกัน")).toBeNull();
+    expect(q("พรุ่งนี้ 9 โมง ประชุมไหม")).toBeNull();
   });
 });
