@@ -1,0 +1,27 @@
+name = "line-reminder-bot"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# เช็กการเตือนที่ถึงเวลาทุก 1 นาที
+[triggers]
+crons = ["* * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "line-reminder-db"
+# ใส่ database_id ที่ได้จากคำสั่ง `npx wrangler d1 create line-reminder-db`
+database_id = "REPLACE_WITH_YOUR_DATABASE_ID"
+
+[vars]
+# โมเดล Claude ที่ใช้แยกเวลาจากข้อความ (เปลี่ยนเป็น claude-opus-5-5 ได้ถ้าอยากให้แม่นขึ้น แต่แพงกว่า)
+CLAUDE_MODEL = "claude-haiku-5-5"
+# คำขึ้นต้นที่ทำให้บอทตอบในกลุ่ม (คั่นด้วย comma) นอกจากการแท็กบอทตรงๆ
+BOT_KEYWORDS = "บอท,เตือน"
+# เวลาที่ใช้เมื่อผู้ใช้ไม่ได้บอกเวลา
+DEFAULT_TIME = "08:00"
+
+# ความลับ ใส่ด้วยคำสั่ง `npx wrangler secret put <ชื่อ>` ห้ามเขียนลงไฟล์นี้
+#   LINE_CHANNEL_SECRET
+#   LINE_CHANNEL_ACCESS_TOKEN
+#   ANTHROPIC_API_KEY
