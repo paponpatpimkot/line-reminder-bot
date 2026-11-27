@@ -116,8 +116,18 @@ npm run deploy
 | `AI_PROVIDER` | `workers-ai` | AI ที่ใช้กับภาษาพูด: `workers-ai` (ฟรี) หรือ `claude` (แม่นกว่า ต้องเติมเครดิตและ `npx wrangler secret put ANTHROPIC_API_KEY`) |
 | `WORKERS_AI_MODEL` | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` | โมเดลของ Workers AI |
 | `CLAUDE_MODEL` | `claude-haiku-5-5` | โมเดล Claude เมื่อเลือก `claude` (ไม่ถึง ฿0.05 ต่อข้อความ) |
+| `GEMINI_MODEL` | `gemini-flash-lite-latest` | โมเดล Gemini ที่ใช้คุยเล่น เมื่อใส่ `GEMINI_API_KEY` แล้ว |
 | `BOT_KEYWORDS` | `บอท,เตือน` | คำขึ้นต้นที่ทำให้บอทตอบในกลุ่ม (คำว่า `ป้า` ใช้ได้เสมอ) |
 | `DEFAULT_TIME` | `08:00` | เวลาที่ใช้เมื่อไม่ได้บอกเวลา |
+
+### ให้ป้าคุยเล่นเก่งขึ้นด้วย Gemini (ฟรี)
+
+1. เข้า https://aistudio.google.com → Get API key → Create API key (ไม่ต้องใส่บัตร)
+2. `npx wrangler secret put GEMINI_API_KEY` แล้ววาง key
+3. ไม่ต้อง deploy ใหม่ ป้าใช้ Gemini คุยเล่นทันที
+
+ใช้เฉพาะตอนคุยเล่น (Flash-Lite ฟรีราว 500 ข้อความ/วัน) ถ้าโควตาหมด ป้าถอยไปใช้ Workers AI เอง
+แบบฟรี Google อาจนำข้อความไปพัฒนาโมเดล อย่าคุยเรื่องลับกับป้า
 
 ## โครงสร้างโค้ด
 

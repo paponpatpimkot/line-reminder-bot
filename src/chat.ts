@@ -6,6 +6,8 @@ import { toLocal } from "./time";
 
 export interface ChatEnv extends ParseEnv {
   DB: D1Database;
+  GEMINI_API_KEY?: string;
+  GEMINI_MODEL?: string;
 }
 
 const HISTORY_TURNS = 6; // จำ 6 ข้อความล่าสุด (คนพูด 3 ป้าตอบ 3)
@@ -72,7 +74,7 @@ export async function chatWithAuntie(env: ChatEnv, chatId: string, speaker: stri
     const userTurn: Turn = { role: "user", content: speaker ? `${speaker}: ${message}` : message };
     const turns = [...history, userTurn];
 
-    const answer = env.AI_PROVIDER === "claude" ? await askClaude(env, now, turns) : await askWorkersAI(env, now, turns);
+    const answer = await ask(env, now, turns);
     if (!answer) return null;
 
     await saveTurns(env.DB, chatId, [userTurn, { role: "assistant", content: answer }], now);
@@ -81,6 +83,37 @@ export async function chatWithAuntie(env: ChatEnv, chatId: string, speaker: stri
     console.error("chat failed", err);
     return null;
   }
+}
+
+/** เลือก AI สำหรับคุยเล่น: Claude ถ้าตั้งไว้, Gemini ถ้ามี key, ไม่งั้น Workers AI ; Gemini ใช้ไม่ได้ (เช่นโควตาวันนี้หมด) ถอยไปใช้ Workers AI */
+async function ask(env: ChatEnv, now: number, turns: Turn[]): Promise<string | null> {
+  if (env.AI_PROVIDER === "claude") return askClaude(env, now, turns);
+  if (env.GEMINI_API_KEY) {
+    const answer = await askGemini(env, now, turns).catch((err) => {
+      console.error("Gemini chat failed, falling back to Workers AI", err);
+      return null;
+    });
+    if (answer) return answer;
+  }
+  return askWorkersAI(env, now, turns);
+}
+
+async function askGemini(env: ChatEnv, now: number, turns: Turn[]): Promise<string | null> {
+  const model = env.GEMINI_MODEL || "gemini-flash-lite-latest";
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY! },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt(now) }] },
+      contents: turns.map((t) => ({ role: t.role === "assistant" ? "model" : "user", parts: [{ text: t.content }] })),
+      generationConfig: { maxOutputTokens: 400, temperature: 0.7 },
+    }),
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+  const out = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+  return cleanAnswer(out);
 }
 
 async function askWorkersAI(env: ChatEnv, now: number, turns: Turn[]): Promise<string | null> {

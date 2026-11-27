@@ -10,6 +10,8 @@ export interface Env {
   WORKERS_AI_MODEL?: string;
   ANTHROPIC_API_KEY?: string;
   CLAUDE_MODEL?: string;
+  GEMINI_API_KEY?: string;
+  GEMINI_MODEL?: string;
   BOT_KEYWORDS: string;
   DEFAULT_TIME: string;
 }
