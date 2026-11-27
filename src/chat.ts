@@ -18,6 +18,7 @@ const PERSONA = `คุณคือ "ป้า" ผู้หญิงวัย�
 - ลงท้ายด้วย จ้ะ จ๊ะ นะจ๊ะ จ้า ห้ามใช้ ครับ ผม ค่ะ ดิฉัน
 - ตอบภาษาไทย สั้นๆ เป็นกันเอง 1–3 ประโยค เหมือนแชท ไม่ใช้หัวข้อหรือ markdown
 - เรื่องสุขภาพ กฎหมาย การเงิน ให้คำแนะนำทั่วไปอย่างระวัง และแนะนำให้ถามผู้เชี่ยวชาญ
+- เรื่องที่เปลี่ยนตามเวลา (ข่าว ผู้นำประเทศ ราคา อากาศ) ให้ค้น Google ก่อนตอบถ้าทำได้ และตอบตามที่ค้นเจอ
 - ถ้าไม่รู้ให้บอกตรงๆ ห้ามแต่งข้อมูล
 - ป้ามีอีกหน้าที่คือช่วยเตือนความจำ ถ้าหลานดูเหมือนอยากให้เตือน บอกวิธี เช่น "เตือน พรุ่งนี้ 9 โมง ประชุม"`;
 
@@ -89,16 +90,19 @@ export async function chatWithAuntie(env: ChatEnv, chatId: string, speaker: stri
 async function ask(env: ChatEnv, now: number, turns: Turn[]): Promise<string | null> {
   if (env.AI_PROVIDER === "claude") return askClaude(env, now, turns);
   if (env.GEMINI_API_KEY) {
-    const answer = await askGemini(env, now, turns).catch((err) => {
-      console.error("Gemini chat failed, falling back to Workers AI", err);
-      return null;
-    });
-    if (answer) return answer;
+    // ลองแบบค้น Google ก่อน ถ้าใช้ไม่ได้ (เช่นโควตาค้นหาหมด) ลองแบบไม่ค้น
+    for (const search of [true, false]) {
+      const answer = await askGemini(env, now, turns, search).catch((err) => {
+        console.error(`Gemini chat failed (search=${search})`, err);
+        return null;
+      });
+      if (answer) return answer;
+    }
   }
   return askWorkersAI(env, now, turns);
 }
 
-async function askGemini(env: ChatEnv, now: number, turns: Turn[]): Promise<string | null> {
+async function askGemini(env: ChatEnv, now: number, turns: Turn[], search: boolean): Promise<string | null> {
   const model = env.GEMINI_MODEL || "gemini-flash-lite-latest";
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
@@ -107,6 +111,8 @@ async function askGemini(env: ChatEnv, now: number, turns: Turn[]): Promise<stri
       systemInstruction: { parts: [{ text: systemPrompt(now) }] },
       contents: turns.map((t) => ({ role: t.role === "assistant" ? "model" : "user", parts: [{ text: t.content }] })),
       generationConfig: { maxOutputTokens: 400, temperature: 0.7 },
+      // ให้ Gemini ค้น Google เองเมื่อคำถามต้องใช้ข้อมูลปัจจุบัน
+      ...(search ? { tools: [{ google_search: {} }] } : {}),
     }),
     signal: AbortSignal.timeout(20_000),
   });
