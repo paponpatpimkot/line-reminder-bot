@@ -80,13 +80,20 @@ export function quickParse(input: string, now: number): QuickIntent | null {
   if (/อะไร|ไหม|มั้ย|ยังไง|อย่างไร|ทำไม|เหรอ|หรอ|ไง|กี่|ใคร|ที่ไหน|[?？]/.test(input)) return null;
 
   let mentionAll = false;
-  if (take(/^\s*ทุกคน/)) mentionAll = true;
+  if (take(/^\s*(?:ให้)?ทุกคน(?:ให้)?/)) mentionAll = true;
+
+  // ----- เว้นเสาร์อาทิตย์ -----
+  const weekendOff = !!take(
+    /(?:ยกเว้น|เว้น|ไม่รวม)\s*(?:วัน)?เสาร์\s*(?:และ|กับ|[-–,]|ถึง)?\s*(?:วัน)?อาทิตย์(?:\s*ไม่ต้องเตือน)?|(?:ยกเว้น|เว้น|ไม่รวม)\s*วันหยุด(?:สุดสัปดาห์|เสาร์\s*-?\s*อาทิตย์)?(?:\s*ไม่ต้องเตือน)?|(?:วัน)?เสาร์\s*(?:และ|กับ|[-–])?\s*(?:วัน)?อาทิตย์\s*ไม่ต้องเตือน/,
+  );
+  // ข้อยกเว้นแบบอื่น ให้ AI อ่าน
+  if (/ยกเว้น|เว้น|ไม่ต้องเตือน/.test(s)) return null;
 
   // ----- เตือนซ้ำ -----
   let repeat: Repeat = "none";
   let date = "";
   let m: RegExpExecArray | null;
-  if (take(/ทุกวันทำงาน|ทุกวันจันทร์\s*(ถึง|-|–)\s*ศุกร์|ทุกจันทร์\s*(ถึง|-|–)\s*ศุกร์/)) repeat = "weekdays";
+  if (take(/(?:ทุก(?:ๆ)?\s*)?วันทำงาน|(?:ทุก(?:ๆ)?\s*)?(?:วัน)?จันทร์\s*(?:ถึง|-|–)\s*(?:วัน)?ศุกร์/)) repeat = "weekdays";
   else if ((m = take(new RegExp(`ทุก(?:วัน)?${WD}`)))) {
     repeat = "weekly";
     date = nextWeekday(now, WEEKDAYS[m[1]], false);
@@ -153,6 +160,11 @@ export function quickParse(input: string, now: number): QuickIntent | null {
     if (h > 12) return null;
     if (!m[2] && h >= 1 && h <= 5) h += 12; // "3 โมง" = บ่าย 3
     time = `${pad(h)}:${pad(half(m[3]))}`;
+  }
+
+  if (weekendOff) {
+    if (repeat === "daily") repeat = "weekdays";
+    else if (repeat !== "weekdays") return null;
   }
 
   // ต้องมีเวลาชัดเจน ไม่งั้นอาจเป็นแค่ประโยคที่มีคำว่า "วันนี้" "พรุ่งนี้" ให้ AI ตัดสิน

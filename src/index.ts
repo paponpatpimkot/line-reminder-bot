@@ -140,7 +140,7 @@ async function respond(
   if (!message) return [text("ว่าไงจ๊ะหลาน ให้ป้าช่วยอะไร")];
 
   // คำสั่งง่ายๆ ไม่ต้องเรียก AI
-  const simple = message.replace(/^เตือน\s*/, "").trim();
+  const simple = message.replace(/^(?:ช่วย)?(?:ตั้ง)?(?:การ)?เตือน(?:ความจำ)?\s*/, "").trim();
   if (/^(วิธีใช้|ช่วยด้วย|help)$/i.test(simple)) return [text(HELP)];
   if (/^(ดู)?รายการ(เตือน)?$/.test(simple)) return [await listReminders(env, chatId)];
   if (/^(โควตา|โควต้า)$/.test(simple)) return [await quotaText(env, source)];
@@ -194,6 +194,11 @@ async function createReminder(
   if (!resolved) return text('ป้าไม่แน่ใจเรื่องวันหรือเวลาจ้ะ ลองพิมพ์ใหม่นะหลาน เช่น "เตือน พรุ่งนี้ 9 โมง ประชุม"');
   if (resolved.fireAt < now - 60_000) {
     return text(`เวลา ${formatThai(resolved.fireAt)} ผ่านไปแล้วนะหลาน บอกวันเวลาใหม่ให้ป้าอีกทีจ้ะ`);
+  }
+
+  // เตือนวันทำงาน ครั้งแรกต้องไม่ตรงเสาร์อาทิตย์
+  if (intent.repeat === "weekdays") {
+    while ([0, 6].includes(toLocal(resolved.fireAt).weekday)) resolved.fireAt += 24 * 60 * 60 * 1000;
   }
 
   const chatId = chatIdOf(source);
