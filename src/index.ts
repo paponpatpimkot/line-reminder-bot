@@ -13,7 +13,7 @@ import {
   type Source,
   type WebhookEvent,
 } from "./line";
-import { chatWithAuntie, matchKeyword } from "./chat";
+import { chatWithAuntie, forgetChat, matchKeyword } from "./chat";
 import { parseMessage } from "./parse";
 import { quickParse } from "./quickparse";
 import { formatThai, nextOccurrence, repeatLabel, resolveFireAt, timesPerMonth, toLocal, type Repeat } from "./time";
@@ -45,6 +45,7 @@ const HELP = `วิธีให้ป้าช่วยเตือนจ้ะ
 • ลบ: "เตือน ลบ 12"
 • โควตา: "เตือน โควตา"
 • คุยเล่นกับป้า: "ป้า วันนี้กินอะไรดี"
+• ให้ป้าลืมที่คุยกัน: "ป้า ลืม"
 ในกลุ่ม ขึ้นต้นด้วย "ป้า" "เตือน" หรือ "บอท" หรือแท็กป้าก็ได้จ้ะ`;
 
 export default {
@@ -142,6 +143,10 @@ async function respond(
   // คำสั่งง่ายๆ ไม่ต้องเรียก AI
   const simple = message.replace(/^(?:ช่วย)?(?:ตั้ง)?(?:การ)?เตือน(?:ความจำ)?\s*/, "").trim();
   if (/^(วิธีใช้|ช่วยด้วย|help)$/i.test(simple)) return [text(HELP)];
+  if (/^(ลืม|ลืมให้หมด|ลืมที่คุย|ล้างความจำ)$/.test(simple)) {
+    await forgetChat(env.DB, chatId);
+    return [text("ป้าลืมเรื่องที่คุยกันเมื่อกี้หมดแล้วจ้ะ เริ่มคุยใหม่ได้เลยนะหลาน (การเตือนที่ตั้งไว้ยังอยู่ครบจ้ะ)")];
+  }
   if (/^(ดู)?รายการ(เตือน)?$/.test(simple)) return [await listReminders(env, chatId)];
   if (/^(โควตา|โควต้า)$/.test(simple)) return [await quotaText(env, source)];
   const del = /^(ลบ|ยกเลิก)\s*#?\s*([\d\s,#]+)$/.exec(simple);

@@ -68,6 +68,12 @@ function systemPrompt(now: number): string {
 }
 
 /** คุยกับป้า คืนข้อความตอบ หรือ null ถ้า AI ใช้ไม่ได้ */
+/** ล้างบทสนทนาที่ป้าจำไว้ในแชทนี้ */
+export async function forgetChat(db: D1Database, chatId: string): Promise<void> {
+  await ensureTable(db);
+  await db.prepare(`DELETE FROM chat_history WHERE chat_id = ?`).bind(chatId).run();
+}
+
 export async function chatWithAuntie(env: ChatEnv, chatId: string, speaker: string | null, message: string, now: number): Promise<string | null> {
   try {
     await ensureTable(env.DB);
