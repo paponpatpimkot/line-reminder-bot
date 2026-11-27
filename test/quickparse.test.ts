@@ -39,6 +39,19 @@ describe("quickParse", () => {
     expect(q("ทุกวัน 2 ทุ่ม กินยา")).toMatchObject({ repeat: "daily", time: "20:00", text: "กินยา" });
   });
 
+  it("reads weekday repeats said in other ways", () => {
+    expect(q("ทุกคนให้สแกนนิ้วทุกวัน เวลา 19.05 ยกเว้นวันเสาร์และวันอาทิตย์ไม่ต้องเตือน")).toMatchObject({
+      repeat: "weekdays", time: "19:05", date: "", mention_all: true, text: "สแกนนิ้ว",
+    });
+    expect(q("ทุกคนวันทำงาน เวลา 19.00 ให้ลงชื่อออกออนไลน์")).toMatchObject({
+      repeat: "weekdays", time: "19:00", mention_all: true, text: "ลงชื่อออกออนไลน์",
+    });
+    expect(q("จันทร์-ศุกร์ 8 โมงเช้า เช็กอีเมล")).toMatchObject({ repeat: "weekdays", time: "08:00", text: "เช็กอีเมล" });
+    expect(q("ทุกวัน 2 ทุ่ม กินยา เว้นเสาร์อาทิตย์")).toMatchObject({ repeat: "weekdays", text: "กินยา" });
+    // ข้อยกเว้นแบบอื่นให้ AI อ่าน
+    expect(q("ทุกวัน 2 ทุ่ม กินยา ยกเว้นวันพุธ")).toBeNull();
+  });
+
   it("flags mention-all", () => {
     expect(q("ทุกคน 30/11 20:00 ปิดระบบ")).toMatchObject({ mention_all: true, text: "ปิดระบบ" });
   });
